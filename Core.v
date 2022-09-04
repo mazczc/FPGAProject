@@ -23,17 +23,19 @@
 //BRAM中的每一行数据代表矩阵对应channel对应位置的数据
 //8.28更新，基本完成了该核的内容书写，接下来等待TB和测试数据
 //8.31更新，试图添加en信号以控制
+//9.4更新，修改了地址控制模式以访问 OUTPUTreg中的内容
 module Core(input clk,
             input rst_n,
             input en,
-            input [10: 0] addr,
-            output reg OUTPUT//(为了可以过综合,正常这里应该是Data(512位implemention会炸))
+            input [11: 0] addr,
+            output reg OUTPUT//(为了可以过综合,正常这里应该是Data(1536位implemention会炸))
             );
     //工具行
    
     //用到的地址以及接线
-    reg [511: 0] Data;
-     always @(posedge clk) OUTPUT <= Data[0];
+    reg [1535: 0] Data;
+     always @(posedge clk) 
+        OUTPUT <= Data[0]; //此段仅用于在implementiion时控制输出位数，防止IO爆炸
     reg [9: 0] add_input;
     reg [9: 0] add_k;
     wire [511: 0] Input;
@@ -42,13 +44,13 @@ module Core(input clk,
     reg [1535: 0] Channel;
     wire [1535: 0] C_temp;//Output 每一行的数据
     reg [9: 0] add_output, add_outputb;
-    reg wea, enb;
+    reg wea, weab;
     reg [511: 0] datain = 512'b0;
     
     input_BRAM iB(.clka(clk), .wea(wea), .addra(add_input),.dina(datain), .douta(Input));
     kernel_BRAM kB(.clka(clk), .wea(wea), .addra(add_k),.dina(datain), .douta(Kernel));
-    output_BRAM oB (.clka(clk), .wea(enb), .addra(add_output), .dina(Channel), 
-                    .clkb(clk), .enb(enb), .addrb(add_outputb),.doutb(C_temp));
+    output_BRAM oB (.clka(clk), .wea(weab), .addra(add_output), .dina(Channel), 
+                    .clkb(clk), .addrb(add_outputb),.doutb(C_temp));
     CalculationCore CC(Input, Kernel, clk, rst_n, Result);
     
     //生成可控制的地址信号
@@ -94,9 +96,9 @@ module Core(input clk,
             nc <= n + 1 - nk;
             ck2 <= ck; //对拍子用的
         end else begin
-            add_input <= addr[10: 1];
-            add_k <= addr[10: 1];
-            add_outputb <= 0;
+            add_input <= addr[11: 2];
+            add_k <= addr[11: 2];
+            add_outputb <= addr[11: 2];
             mc <= 0;
             nc <= 0;
             ck2 <= 0;
@@ -105,7 +107,9 @@ module Core(input clk,
 //始终激活两个端口
     always @(posedge clk) begin
         wea <= 0;
-        enb <= 1;
+        if (en) 
+            weab <= 1;
+        else weab <= 0;
     end
 //在计算过程中读取output_BRAM中的半成品数据
     reg [1535: 0] temp_data;
@@ -224,7 +228,9 @@ module Core(input clk,
     reg [511: 0] Datareg;
     reg enreg, enreg2, enreg3;
     reg [10: 0] addrreg, addrreg1, addrreg2;
+    reg [1535: 0] C_tempreg;
     always @(posedge clk) begin
+        C_tempreg <= C_temp;
         enreg <= en;
         enreg2 <= enreg;
         enreg3 <= enreg2;
@@ -232,10 +238,12 @@ module Core(input clk,
         addrreg1 <= addrreg;
         addrreg2 <= addrreg1;
         if (enreg3) Data <= 0; 
-        else if (addrreg2[0] == 0) begin
+        else if (addrreg2[1: 0] == 2'b00) begin
             Data <= Input;
-        end else if (addrreg2[0] == 1) begin
+        end else if (addrreg2[1: 0] == 2'b01) begin
             Data <= Kernel;
+        end else begin
+            Data <= C_tempreg;
         end
     end
     
