@@ -26,19 +26,32 @@ module TB_Core();
     reg en;
     reg [10: 0] addr;
     wire OUTPUT;
+    integer i;
     Core C(clk, rst_n, en, addr, OUTPUT);
     
     initial begin
         clk = 0;
         rst_n = 1;
-        en <= 0;
-        addr <= 10'b0000000000;
+        en <= 1;
+        addr <= 11'b00000000000;
         
         #1 rst_n = 0;
         
-        #100 addr <= 10'b0000000001;
-    end
+        #1179662 en<=0;
+        
+        #10 addr <= 11'b00000000001;
+        
+        #20 addr <= 11'b00000000011;
+        
+        for ( i = 0; i < 1024; i = i + 1 ) begin
+            addr[11: 2] <= addr[11: 2] + 1;
+        end
+     end
     
     always #1 clk <= ~clk;
+    
+    initial begin
+        $monitor("%h",OUTPUT);
+    end
     
 endmodule
