@@ -1,4 +1,3 @@
-#Read me
 
 ## Task 1
 
@@ -6,7 +5,7 @@
 
 本任务项目中包含设计文件：	
 
-	Multiplier.v,   Calculation.v,  Core.v
+	Multiplier.v,   CalculationCore.v,  Core.v
 
 仿真文件：
 
@@ -32,15 +31,15 @@
 计算的input矩阵及kernel矩阵存储于input_BRAM iB和kernel_BRAM kB中。
 
 iB中的每一行数据代表64个channel中对应位置的8位整数。
-即位于Channel c，m行，n列的八位整数对应iB中地址为$m*32 + n$对应数据的$[8*c+7: 8*c]$部分。
+即位于Channel c，m行，n列的八位整数对应iB中地址为$m\times 32 + n$对应数据的$[8\times c+7: 8\times c]$部分。
 
 kB中的每一行代表固定outputChannel和位置，64个inputChannel中对应的8位整数。
-即位于inputChannel ic, outputChannel oc，m行，n列的八位整数对应kB中地址为$64*(3*m + n) + oc$对应数据的$[8*ic + 7: 8*ic]$部分。
+即位于inputChannel ic, outputChannel oc，m行，n列的八位整数对应kB中地址为$64\times (3\times m + n) + oc$ 对应数据的 $[8\times ic+7: 8\times ic]$部分。
 
 计算结果最终存储在output_BRAM oB中。
 
 oB中的每一行数据代表64个channel中对应位置的24位整数。
-即，位于Channel c， m行，n列的24位整数对应oB中地址为$m*32 + n$对应数据的$[24*c +23, 24*c]$部分。
+即，位于Channel c， m行，n列的24位整数对应oB中地址为$m\times 32 + n$对应数据的$[24\times c +23, 24\times c]$部分。
 
 #### 模组接口
 
