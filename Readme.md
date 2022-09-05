@@ -5,19 +5,23 @@
 
 本任务项目中包含设计文件：	
 
-	Multiplier.v,   CalculationCore.v,  Core.v
+	Multiplier.v,   CalculationCore.v,  Core.v, CoreT.v
 
 仿真文件：
 
-	TB_Core.v,  TB_Multiplier.v,  TB_CC.v
+	TB_Core.v,  TB_Multiplier.v,  TB_CC.v, TB_CoreT.v
 
-其中TB_Multiplier.v仅用于Multiplier.v的仿真检验，TB_CC仅用于CalculationCore.v的仿真检验。在项目的仿真及综合实验中不包含此两文件，应将TB_Core.v设为顶层文件。
+其中TB_Multiplier.v仅用于Multiplier.v的仿真检验，TB_CC仅用于CalculationCore.v的仿真检验。在项目的仿真及综合实验中不包含此两文件，应将TB_Core.v或TB_CoreT.v设为顶层文件。
 
 在文件Core.v中，三个ip核的设置如下：
 
 	input_BRAM : Single Port RAM，端口宽度512位，深度1024位，端口使能Always Enabled，操作模式为Write First，使用Primitive Output Register;
 	kernel_BRAM：Single Port RAM，端口宽度512位，深度 576位，端口使能Always Enabled，操作模式为Write First，使用Primitive Output Register;
 	output_BRAM: Simple Dual Port RAM，端口宽度1536位，深度1024位，A、B端口均设置为Always Enabled，操作模式Write First，端口B不使用Output Registers;
+
+在文件CoreT.v中，在Core.v的基础上实现了可变参数，可以更改input矩阵的宽度、高度、Channel数量与输出矩阵的Channel数量。值得一体的是，尽管CoreT.v中提供了改变kernel大小的hk信号输入，但相关代码逻辑仍未实现，应将hk固定为3以避免计算出现问题。
+
+CoreT.v的其余设置与Core.v相同。
 
 ### 计算模式
 
@@ -52,6 +56,20 @@ oB中的每一行数据代表64个channel中对应位置的24位整数。
 	output [1535: 0] Data;   输出数据，在en信号低时有效，输出addr对应位置的数据，多余位置以0补足。
 
 在综合及排线过程中，Data宽度改为一位以防止IO资源不足，仅输出对应数据的第一位。
+
+计算模组CoreT的接口为：
+
+	input clk;               时钟信号接口
+	input rst_n;             复位信号接口（高电平有效）
+	input en;                使能信号，高电平进行计算，低电平时停止计算
+	input [11: 0] addr;      地址信号，在en信号低时有效，前两位控制BRAM编号，后10位代表对应地址。
+	output [1535: 0] Data;   输出数据，在en信号低时有效，输出addr对应位置的数据，多余位置以0补足。
+	input [5: 0] H;          可变参数信号，输入矩阵的高度，最多不超过32
+	input [5: 0] W;          可变参数信号，输入矩阵的宽度，最多不超过32
+	input [6: 0] C;          可变参数信号，输入矩阵的Channel数，最大不超过64
+	input [6: 0] K;          可变参数信号，输出矩阵的Channel数，最大不超过64
+	input [2: 0] hk;         可变参数信号，kernel的宽/高度，目前未实装，务必固定为3
+
 
 #### 计算单元
 
